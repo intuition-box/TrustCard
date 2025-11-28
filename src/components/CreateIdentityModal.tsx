@@ -125,7 +125,7 @@ export default function CreateIdentityModal({
               disabled={loading}
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              placeholder="Exact atom label (ex: mzta.cat)"
+              placeholder="Exact atom label"
               className={styles.input}
             />
           </label>

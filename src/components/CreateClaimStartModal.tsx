@@ -173,7 +173,7 @@ export default function CreateClaimStartModal({
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               disabled={loading}
-              placeholder="ex: mzta.cat, cobie, punk#1234…"
+              placeholder="Search"
               className={styles.input}
             />
           </label>

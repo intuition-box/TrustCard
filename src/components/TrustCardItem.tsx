@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { useChainId, usePublicClient } from 'wagmi'
 import {
   getMultiVaultAddressFromChainId,
@@ -21,6 +22,7 @@ interface Props {
 }
 
 type Side = 'support' | 'oppose'
+
 function IdentityBlock({
   avatar,
   fallbackInitial,
@@ -38,15 +40,20 @@ function IdentityBlock({
 }) {
   const isGrid = view === 'grid'
 
+  const avatarSrc =
+    avatar && avatar.startsWith('http') ? avatar : '/default-avatar.png'
+
   return (
     <div className={styles.identityCol}>
       <div className={styles.identityLeft}>
         <div className={styles.avatar}>
-          {avatar ? (
-            <img src={avatar} alt={label || 'Identity'} />
-          ) : (
-            <span className={styles.avatarFallback}>{fallbackInitial}</span>
-          )}
+          <Image
+            src={avatarSrc}
+            alt={label || 'Identity'}
+            width={40}
+            height={40}
+            className={styles.avatarImg}
+          />
         </div>
       </div>
 
@@ -138,7 +145,9 @@ export default function TrustCardItem({
   const [isPreviewLoading, setIsPreviewLoading] = useState(false)
 
   const subjectLabel = triple.subject.label ?? triple.subject.term_id ?? ''
-  const avatar = triple.subject.image || '/default-avatar.png'
+
+  const avatar = triple.subject.image || null
+
   const fallbackInitial =
     (subjectLabel || triple.subject.term_id || '?').trim().slice(0, 2) || '?'
 
