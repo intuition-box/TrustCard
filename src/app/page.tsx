@@ -659,7 +659,7 @@ export default function TrustCardVotePage() {
 
             <div className={styles.heroActions}>
               <a
-                href="https://trust-card.intuition.box/"
+                href="https://docs.trustcard.box/"
                 target="_blank"
                 rel="noreferrer"
                 className={styles.heroCTA}
