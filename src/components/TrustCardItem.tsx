@@ -78,7 +78,7 @@ function IdentityBlock({
                     maximumFractionDigits: 2,
                     minimumFractionDigits: 2,
                   })}{' '}
-                  <span className={styles.topCapUnit}>tTRUST</span>
+                  <span className={styles.topCapUnit}>TRUST</span>
                 </span>
               </div>
             </div>
@@ -100,7 +100,7 @@ function IdentityBlock({
                   maximumFractionDigits: 2,
                   minimumFractionDigits: 2,
                 })}{' '}
-                <span className={styles.topCapUnit}>tTRUST</span>
+                <span className={styles.topCapUnit}>TRUST</span>
               </span>
             </div>
           </div>
@@ -289,13 +289,13 @@ export default function TrustCardItem({
               className={`${styles.stakeHint} ${styles.stakeHintSupport}`}
             >
               <span className={styles.supportTriangle}>▲ </span>
-              Your support: {userStake.support.value.toFixed(3)} tTRUST
+              Your support: {userStake.support.value.toFixed(3)} TRUST
             </span>
           )}
           {userStake.oppose.value > 0 && (
             <span className={`${styles.stakeHint} ${styles.stakeHintOppose}`}>
               <span className={styles.opposeTriangle}>▼ </span>
-              Your oppose: {userStake.oppose.value.toFixed(3)} tTRUST
+              Your oppose: {userStake.oppose.value.toFixed(3)} TRUST
             </span>
           )}
         </div>
@@ -310,7 +310,7 @@ export default function TrustCardItem({
                 maximumFractionDigits: 3,
                 minimumFractionDigits: 3,
               })}{' '}
-              tTRUST
+              TRUST
             </span>
           </div>
           <div className={styles.pillColumn}>
@@ -320,7 +320,7 @@ export default function TrustCardItem({
                 maximumFractionDigits: 3,
                 minimumFractionDigits: 3,
               })}{' '}
-              tTRUST
+              TRUST
             </span>
           </div>
         </div>
@@ -334,7 +334,7 @@ export default function TrustCardItem({
     const priceText = (() => {
       if (!activeAdjustSide) return ''
       if (!activeHasLivePrice) return 'No price yet'
-      if (activePrice > 0) return `${activePrice.toFixed(2)} tTRUST`
+      if (activePrice > 0) return `${activePrice.toFixed(2)} TRUST`
       return '--'
     })()
 

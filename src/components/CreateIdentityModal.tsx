@@ -38,9 +38,11 @@ export default function CreateIdentityModal({
     if (open) {
       setError(null)
       setShowMore(false)
-      if (defaultLabel) {
-        setLabel(defaultLabel)
-      }
+      setImage('')
+      setDescription('')
+      setUrl('')
+      setType('person')
+      setLabel(defaultLabel ?? '')
     }
   }, [open, defaultLabel])
 
@@ -66,12 +68,6 @@ export default function CreateIdentityModal({
         deposit: '0',
       })
 
-      setLabel('')
-      setImage('')
-      setDescription('')
-      setUrl('')
-      setType('person')
-      setShowMore(false)
       onClose()
     } catch (err: any) {
       console.error(err)
@@ -87,6 +83,20 @@ export default function CreateIdentityModal({
     } else {
       onClose()
     }
+  }
+
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) {
+      setImage('')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setImage(reader.result as string)
+    }
+    reader.readAsDataURL(file)
   }
 
   return (
@@ -168,18 +178,7 @@ export default function CreateIdentityModal({
                 type="file"
                 disabled={loading}
                 accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) {
-                    const reader = new FileReader()
-                    reader.onloadend = () => {
-                      setImage(reader.result as string)
-                    }
-                    reader.readAsDataURL(file)
-                  } else {
-                    setImage('')
-                  }
-                }}
+                onChange={handleImageChange}
                 className={styles.input}
               />
             </label>

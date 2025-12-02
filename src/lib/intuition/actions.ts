@@ -205,6 +205,12 @@ export async function ensureIdentityAtom(
   ctx: IntuitionContext,
   label: string,
   _depositAmount?: bigint,
+  metadata?: {
+    image?: string
+    description?: string
+    url?: string
+    type?: string
+  },
 ): Promise<`0x${string}`> {
   if (!ctx.walletClient.account) {
     throw new Error('Wallet not connected')

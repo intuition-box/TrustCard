@@ -24,7 +24,7 @@ function formatMarketCap(weiStr?: string | null): string {
     return 'Market cap: —'
   }
 
-  if (wei === 0n) return 'Market cap: 0 tTRUST'
+  if (wei === 0n) return 'Market cap: 0 TRUST'
 
   const trust = Number(wei) / 1e18
   if (!Number.isFinite(trust)) return 'Market cap: —'
@@ -42,7 +42,7 @@ function formatMarketCap(weiStr?: string | null): string {
     display = trust.toFixed(2)
   }
 
-  return `Market cap: ${display}${suffix} tTRUST`
+  return `Market cap: ${display}${suffix} TRUST`
 }
 
 export default function CreateClaimStartModal({
@@ -57,6 +57,7 @@ export default function CreateClaimStartModal({
   const [status, setStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [suggestions, setSuggestions] = useState<AtomWithMarketCap[]>([])
+  const [selectedAtom, setSelectedAtom] = useState<AtomWithMarketCap | null>(null)
 
   useEffect(() => {
     if (!open) {
@@ -64,6 +65,7 @@ export default function CreateClaimStartModal({
       setStatus(null)
       setLoading(false)
       setSuggestions([])
+      setSelectedAtom(null)
     }
   }, [open])
 
@@ -75,12 +77,14 @@ export default function CreateClaimStartModal({
     if (!trimmed) {
       setStatus(null)
       setSuggestions([])
+      setSelectedAtom(null)
       return
     }
 
     if (trimmed.length < 2) {
       setStatus('Type at least 2 characters to search.')
       setSuggestions([])
+      setSelectedAtom(null)
       return
     }
 
@@ -103,6 +107,7 @@ export default function CreateClaimStartModal({
         .catch((err: any) => {
           console.error(err)
           setSuggestions([])
+          setSelectedAtom(null)
           setStatus(err?.message ?? 'Search failed.')
         })
         .finally(() => setLoading(false))
@@ -116,19 +121,34 @@ export default function CreateClaimStartModal({
   const trimmedSubject = subject.trim()
   const canContinue = !!trimmedSubject && !loading
 
-  const exactMatch = suggestions.find(
+  // Si un atome a été explicitement sélectionné on le privilégie
+  const exactMatchFromList = suggestions.find(
     (atom) =>
       atom.label &&
       atom.label.toLowerCase() === trimmedSubject.toLowerCase(),
   )
 
-  const isExisting = Boolean(exactMatch?.term_id)
+  const activeMatch = selectedAtom ?? exactMatchFromList ?? null
+
+  const isExisting = Boolean(activeMatch?.term_id)
   const isNeutralInfo = !!status && !status.toLowerCase().includes('failed')
   const statusClass = isNeutralInfo ? styles.helper : styles.error
 
   function handlePickSuggestion(atom: AtomWithMarketCap) {
     if (!atom.label) return
     setSubject(atom.label)
+    setSelectedAtom(atom)
+  }
+
+  function handleChangeSubject(value: string) {
+    setSubject(value)
+    // Dès que l’utilisateur retape, on oublie le choix précédent
+    setSelectedAtom(null)
+  }
+
+  function handleContinueExisting() {
+    if (!activeMatch?.term_id || !activeMatch.label) return
+    onUseExisting(activeMatch.label, activeMatch.term_id as `0x${string}`)
   }
 
   return (
@@ -171,7 +191,7 @@ export default function CreateClaimStartModal({
             <input
               type="text"
               value={subject}
-              onChange={(e) => setSubject(e.target.value)}
+              onChange={(e) => handleChangeSubject(e.target.value)}
               disabled={loading}
               placeholder="Search"
               className={styles.input}
@@ -182,40 +202,49 @@ export default function CreateClaimStartModal({
 
           {suggestions.length > 0 && (
             <ul className={styles.suggestionsList}>
-              {suggestions.map((atom) => (
-                <li key={atom.term_id} className={styles.suggestionItem}>
-                  <button
-                    type="button"
-                    className={styles.suggestionButton}
-                    onClick={() => handlePickSuggestion(atom)}
-                  >
-                    <div className={styles.suggestionAvatar}>
-                      {atom.image ? (
-                        <img src={atom.image} alt={atom.label ?? 'Identity'} />
-                      ) : (
-                        <span className={styles.suggestionInitial}>
-                          {(atom.label || '?').charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                    <div className={styles.suggestionContent}>
-                      <div className={styles.suggestionLabel}>
-                        {atom.label || 'Unnamed atom'}
+              {suggestions.map((atom) => {
+                const isSelected =
+                  selectedAtom?.term_id === atom.term_id
+
+                return (
+                  <li key={atom.term_id} className={styles.suggestionItem}>
+                    <button
+                      type="button"
+                      className={
+                        isSelected
+                          ? `${styles.suggestionButton} ${styles.suggestionButtonSelected}`
+                          : styles.suggestionButton
+                      }
+                      onClick={() => handlePickSuggestion(atom)}
+                    >
+                      <div className={styles.suggestionAvatar}>
+                        {atom.image ? (
+                          <img src={atom.image} alt={atom.label ?? 'Identity'} />
+                        ) : (
+                          <span className={styles.suggestionInitial}>
+                            {(atom.label || '?').charAt(0).toUpperCase()}
+                          </span>
+                        )}
                       </div>
-                      <div className={styles.suggestionMeta}>
-                        {formatMarketCap(atom.total_market_cap)}
+                      <div className={styles.suggestionContent}>
+                        <div className={styles.suggestionLabel}>
+                          {atom.label || 'Unnamed atom'}
+                        </div>
+                        <div className={styles.suggestionMeta}>
+                          {formatMarketCap(atom.total_market_cap)}
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                </li>
-              ))}
+                    </button>
+                  </li>
+                )
+              })}
             </ul>
           )}
 
           {isExisting && (
             <div className={styles.suggestionPill}>
               <span className={styles.suggestionDot} />
-              Identity “{exactMatch?.label}” already exists — you can use it
+              Identity “{activeMatch?.label}” already exists — you can use it
               directly.
             </div>
           )}
@@ -235,13 +264,7 @@ export default function CreateClaimStartModal({
             <button
               type="button"
               disabled={!canContinue}
-              onClick={() =>
-                exactMatch?.term_id &&
-                onUseExisting(
-                  exactMatch.label!,
-                  exactMatch.term_id as `0x${string}`,
-                )
-              }
+              onClick={handleContinueExisting}
               className={styles.confirm}
             >
               Next · Create Claim

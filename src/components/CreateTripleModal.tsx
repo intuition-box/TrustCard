@@ -70,7 +70,7 @@ export default function CreateTripleModal({
           <span className={styles.stepPill}>Step 2 · Seed the Claim</span>
           <h2 className={styles.title}>Create Trust Card</h2>
           <p className={styles.muted}>
-            Choose how much tTRUST you want to stake on this Claim.
+            Choose how much TRUST you want to stake on this Claim.
           </p>
         </div>
 
@@ -91,7 +91,7 @@ export default function CreateTripleModal({
           </div>
 
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Stake on this Claim (tTRUST)</span>
+            <span className={styles.fieldLabel}>Stake on this Claim (TRUST)</span>
             <input
               type="number"
               min="0.000000000000000001"

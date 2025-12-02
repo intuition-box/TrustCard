@@ -359,6 +359,12 @@ export default function TrustCardVotePage() {
         ctx,
         form.label,
         depositWei,
+        {
+          image: form.image,
+          description: form.description,
+          url: form.url,
+          type: form.type,
+        },
       )
 
       setPendingSubject({ termId: subjectTermId, label: form.label })
@@ -685,7 +691,7 @@ export default function TrustCardVotePage() {
       <CreateTripleModal
         open={isTripleModalOpen}
         subjectLabel={pendingSubject.label}
-        predicateLabel="should holder of"
+        predicateLabel="should be holder of"
         objectLabel="Trust Card"
         onClose={closeTripleModal}
         onConfirm={handleCreateTriple}
