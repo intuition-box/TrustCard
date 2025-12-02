@@ -4,6 +4,7 @@ import {
   getMultiVaultAddressFromChainId,
   deposit,
   createTriples,
+  getTripleCost,
 } from '@0xintuition/protocol'
 
 import {
@@ -204,7 +205,7 @@ export async function findTrustCardTriple(
 export async function ensureIdentityAtom(
   ctx: IntuitionContext,
   label: string,
-  _depositAmount?: bigint,
+  depositAmount?: bigint,
   metadata?: {
     image?: string
     description?: string
@@ -236,6 +237,7 @@ export async function ensureIdentityAtom(
       address: multi,
     } as any,
     trimmedLabel,
+    depositAmount,
   )
 
   const termId = (created as any)?.state?.termId as `0x${string}` | undefined
@@ -261,7 +263,16 @@ export async function ensureTrustCardTriple(
   const multi = getMultiVaultAddressFromChainId(ctx.chainId)
   if (!multi) throw new Error('MultiVault not found')
 
-  const stakeAmount = depositAmount ?? 10_000_000_000_000_000n
+  const stakeAmount =
+    depositAmount && depositAmount > 0n
+      ? depositAmount
+      : 10_000_000_000_000_000n
+  const tripleCost = await getTripleCost({
+    address: multi,
+    publicClient: ctx.publicClient,
+  } as any)
+  // Triple creation requires the base protocol fee plus the desired stake.
+  const totalAmount = stakeAmount + tripleCost
 
   await createTriples(
     {
@@ -270,8 +281,8 @@ export async function ensureTrustCardTriple(
       address: multi,
     } as any,
     {
-      args: [[subjectTermId], [PREDICATE_ID], [OBJECT_ID], [stakeAmount]],
-      value: stakeAmount,
+      args: [[subjectTermId], [PREDICATE_ID], [OBJECT_ID], [totalAmount]],
+      value: totalAmount,
     } as any,
   )
 

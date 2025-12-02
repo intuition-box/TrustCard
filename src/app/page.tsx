@@ -32,9 +32,9 @@ import {
   parseAmountToNumber,
 } from '@/lib/intuition/utils'
 import { useWaveTimer } from '@/hooks/useWaveTimer'
+import { intuitionMainnet } from '@/lib/wagmiConfig'
 
-const INTUITION_MAINNET_ID = 1155
-const MIN_TRUST_WEI = 10_000_000_000_000_000n
+const MIN_TRUST_WEI = 10_000_000_000_000_000n // 0.01
 const VOTE_UNIT = Number(MIN_TRUST_WEI) / 1e18
 
 const WAVE_1_END = new Date('2025-12-07T00:00:00Z').getTime()
@@ -85,9 +85,9 @@ export default function TrustCardVotePage() {
       return null
     }
 
-    if (chainId !== INTUITION_MAINNET_ID) {
+    if (chainId !== intuitionMainnet.id) {
       setError(
-        `Please switch your wallet to the Intuition Mainnet (chain id ${INTUITION_MAINNET_ID}) to ${action}.`,
+        `Wrong network: you are on chain id ${chainId}, please switch your wallet to Intuition Mainnet (chain id ${intuitionMainnet.id}) to ${action}.`,
       )
       return null
     }
@@ -431,7 +431,16 @@ export default function TrustCardVotePage() {
       showNotification('success', 'Claim created successfully.')
     } catch (err: any) {
       console.error(err)
-      showNotification('error', err?.message ?? 'Failed to create claim.')
+      const msg = String(err?.message ?? '')
+
+      if (msg.includes('MultiVault_InsufficientBalance')) {
+        const friendly =
+          'MultiVault reports insufficient balance to seed this Claim. Make sure you have enough native TRUST on Intuition Mainnet for the chosen amount (plus gas).'
+        setError(friendly)
+        showNotification('error', friendly)
+      } else {
+        showNotification('error', err?.message ?? 'Failed to create claim.')
+      }
     } finally {
       setIsCreateBusy(false)
       closeTripleModal()
@@ -505,6 +514,11 @@ export default function TrustCardVotePage() {
           'You already hold a position on the opposite side. Sell/withdraw it before upvoting.'
         setError(m)
         showNotification('error', m)
+      } else if (message.includes('MultiVault_InsufficientBalance')) {
+        const friendly =
+          'MultiVault reports insufficient balance to buy this position. Make sure you have enough native TRUST on Intuition Mainnet for the chosen amount (plus gas).'
+        setError(friendly)
+        showNotification('error', friendly)
       } else {
         const fallback = message || 'Error while sending your upvote.'
         setError(fallback)
@@ -582,6 +596,11 @@ export default function TrustCardVotePage() {
           'You already hold a position on the opposite side. Sell/withdraw it before downvoting.'
         setError(m)
         showNotification('error', m)
+      } else if (message.includes('MultiVault_InsufficientBalance')) {
+        const friendly =
+          'MultiVault reports insufficient balance to buy this position. Make sure you have enough native TRUST on Intuition Mainnet for the chosen amount (plus gas).'
+        setError(friendly)
+        showNotification('error', friendly)
       } else {
         const fallback = message || 'Error while sending your downvote.'
         setError(fallback)
