@@ -270,9 +270,11 @@ export default function TrustCardItem({
         ? opposePrice
         : 0
 
+  const subjectUrl = (triple.subject.url ?? '').trim()
   const subjectHref =
-    (triple.subject.url ?? '').trim() ||
-    `${PORTAL_ATOM_BASE}${triple.subject.term_id}`
+    subjectUrl && !subjectUrl.toLowerCase().endsWith('/null')
+      ? subjectUrl
+      : `${PORTAL_ATOM_BASE}${triple.subject.term_id}`
 
   const handleToggleSide = (side: Side) => {
     setActiveAdjustSide((prev) => (prev === side ? null : side))

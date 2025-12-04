@@ -92,12 +92,19 @@ function pickCurveVault(vaults: RawVault[]): RawVault | null {
 
 function extractAtomUrl(atom?: RawAtomSummary): string | null {
   if (!atom?.value) return null
-  return (
+  const raw =
     atom.value.person?.url ??
     atom.value.organization?.url ??
     atom.value.thing?.url ??
     null
-  )
+
+  const trimmed = (raw ?? '').trim()
+  if (!trimmed) return null
+  if (!/^https?:\/\//i.test(trimmed)) return null
+  if (trimmed.toLowerCase().endsWith('/null')) return null
+  if (trimmed.toLowerCase().includes('trustcard.box/null')) return null
+
+  return trimmed
 }
 
 function mapTriple(raw: RawTriple): TrustCardTriple {
