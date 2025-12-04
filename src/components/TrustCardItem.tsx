@@ -11,6 +11,8 @@ import {
 import styles from './TrustCardListSection.module.css'
 import type { TrustCardTriple, UserStake } from '@/lib/intuition/types'
 
+const PORTAL_ATOM_BASE = 'https://www.portal.intuition.systems/explore/atom/'
+
 interface Props {
   triple: TrustCardTriple
   loading: boolean
@@ -30,6 +32,7 @@ function IdentityBlock({
   supportCap,
   view,
   rank,
+  href,
 }: {
   avatar?: string | null
   fallbackInitial: string
@@ -37,6 +40,7 @@ function IdentityBlock({
   supportCap: number
   view: 'list' | 'grid'
   rank: number
+  href: string
 }) {
   const isGrid = view === 'grid'
 
@@ -60,7 +64,16 @@ function IdentityBlock({
       <div className={styles.identityRight}>
         <div className={styles.identityTopRow}>
           <div className={styles.titleBlock}>
-            <h3 className={styles.title}>{label}</h3>
+            <h3 className={styles.title}>
+              <a
+                href={href}
+                target="_blank"
+                rel="noreferrer"
+                className={styles.titleLink}
+              >
+                {label}
+              </a>
+            </h3>
             {view === 'list' && (
               <p className={styles.subtitleInline}>
                 should be holder of → Trust Card
@@ -256,6 +269,10 @@ export default function TrustCardItem({
       : activeAdjustSide === 'oppose'
         ? opposePrice
         : 0
+
+  const subjectHref =
+    (triple.subject.url ?? '').trim() ||
+    `${PORTAL_ATOM_BASE}${triple.subject.term_id}`
 
   const handleToggleSide = (side: Side) => {
     setActiveAdjustSide((prev) => (prev === side ? null : side))
@@ -462,6 +479,7 @@ export default function TrustCardItem({
               supportCap={supportCap}
               view={view}
               rank={rank}
+              href={subjectHref}
             />
           </div>
 
@@ -480,6 +498,7 @@ export default function TrustCardItem({
               supportCap={supportCap}
               view={view}
               rank={rank}
+              href={subjectHref}
             />
             <div className={styles.sectionDivider} />
           </div>

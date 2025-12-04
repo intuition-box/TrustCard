@@ -236,6 +236,20 @@
   text-overflow: ellipsis;
 }
 
+.titleLink {
+  color: inherit;
+  text-decoration: none;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: inherit;
+}
+
+.titleLink:hover {
+  text-decoration: underline;
+}
+
 .cardList .title,
 .cardGrid .title {
   font-size: 1.05rem;

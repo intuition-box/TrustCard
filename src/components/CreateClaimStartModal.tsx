@@ -142,7 +142,6 @@ export default function CreateClaimStartModal({
 
   function handleChangeSubject(value: string) {
     setSubject(value)
-    // Dès que l’utilisateur retape, on oublie le choix précédent
     setSelectedAtom(null)
   }
 

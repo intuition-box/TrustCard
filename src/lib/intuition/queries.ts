@@ -50,6 +50,11 @@ export const GET_TRUSTCARD_TRIPLES_QUERY = `
         term_id
         label
         image
+        value {
+          person { url }
+          organization { url }
+          thing { url }
+        }
       }
       predicate {
         term_id
@@ -104,6 +109,11 @@ export const FIND_TRUSTCARD_TRIPLE_FOR_SUBJECT_QUERY = `
         term_id
         label
         image
+        value {
+          person { url }
+          organization { url }
+          thing { url }
+        }
       }
       predicate {
         term_id
@@ -135,6 +145,31 @@ export const FIND_TRUSTCARD_TRIPLE_FOR_SUBJECT_QUERY = `
           position_count
         }
       }
+    }
+  }
+`
+
+// 🔹 Nouvelle mutation: pinPerson, alignée sur le schéma Mutation_Root.pinPerson(person: PinPersonInput)
+export const PIN_PERSON_MUTATION = `
+  mutation PinPerson(
+    $name: String!
+    $description: String
+    $image: String
+    $url: String
+    $email: String
+    $identifier: String
+  ) {
+    pinPerson(
+      person: {
+        name: $name
+        description: $description
+        image: $image
+        url: $url
+        email: $email
+        identifier: $identifier
+      }
+    ) {
+      uri
     }
   }
 `

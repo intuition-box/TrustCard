@@ -64,7 +64,8 @@ export default function CreateIdentityModal({
         image: image || undefined,
         description: description.trim() || undefined,
         url: url.trim() || undefined,
-        type,
+        // 🔹 Forcé à 'person' pour ce flow Trust Card
+        type: 'person',
         deposit: '0',
       })
 

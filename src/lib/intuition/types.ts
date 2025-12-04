@@ -2,6 +2,7 @@ export interface AtomSummary {
   term_id: `0x${string}`
   label: string | null
   image: string | null
+  url?: string | null
 }
 
 export interface AtomWithMarketCap extends AtomSummary {

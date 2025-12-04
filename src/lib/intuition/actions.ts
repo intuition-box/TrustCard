@@ -1,5 +1,5 @@
 import type { PublicClient, WalletClient } from 'viem'
-import { createAtomFromString } from '@0xintuition/sdk'
+import { createAtomFromIpfsUri } from '@0xintuition/sdk'
 import {
   getMultiVaultAddressFromChainId,
   deposit,
@@ -13,6 +13,7 @@ import {
   GET_ATOM_MARKETCAPS_QUERY,
   GET_TRUSTCARD_TRIPLES_QUERY,
   FIND_TRUSTCARD_TRIPLE_FOR_SUBJECT_QUERY,
+  PIN_PERSON_MUTATION,
 } from './queries'
 import { executeIntuitionQuery } from './graphqlClient'
 import { PREDICATE_ID, OBJECT_ID } from './constants'
@@ -38,11 +39,19 @@ interface RawVault {
   position_count: number
 }
 
+interface RawAtomSummary extends AtomSummary {
+  value?: {
+    person?: { url?: string | null }
+    organization?: { url?: string | null }
+    thing?: { url?: string | null }
+  }
+}
+
 interface RawTriple {
   term_id: `0x${string}`
-  subject: AtomSummary
-  predicate: AtomSummary
-  object: AtomSummary
+  subject: RawAtomSummary
+  predicate: RawAtomSummary
+  object: RawAtomSummary
   term?: { vaults: RawVault[] }
   counter_term?: { vaults: RawVault[] }
 }
@@ -81,6 +90,16 @@ function pickCurveVault(vaults: RawVault[]): RawVault | null {
   )
 }
 
+function extractAtomUrl(atom?: RawAtomSummary): string | null {
+  if (!atom?.value) return null
+  return (
+    atom.value.person?.url ??
+    atom.value.organization?.url ??
+    atom.value.thing?.url ??
+    null
+  )
+}
+
 function mapTriple(raw: RawTriple): TrustCardTriple {
   const termVaults = raw.term?.vaults ?? []
   const counterVaults = raw.counter_term?.vaults ?? []
@@ -91,9 +110,16 @@ function mapTriple(raw: RawTriple): TrustCardTriple {
   const supportVault = mapVault(supportRaw)
   const opposeVault = mapVault(opposeRaw)
 
+  const subject: AtomSummary = {
+    term_id: raw.subject.term_id,
+    label: raw.subject.label,
+    image: raw.subject.image,
+    url: extractAtomUrl(raw.subject),
+  }
+
   return {
     term_id: raw.term_id,
-    subject: raw.subject,
+    subject,
     predicate: raw.predicate,
     object: raw.object,
     supportVault,
@@ -138,7 +164,6 @@ async function attachAtomMarketCaps(
     const capWei = capsByTermId.get(key)
     return {
       ...atom,
-
       total_market_cap: capWei ? capWei.toString() : undefined,
     }
   })
@@ -205,7 +230,7 @@ export async function findTrustCardTriple(
 export async function ensureIdentityAtom(
   ctx: IntuitionContext,
   label: string,
-  depositAmount?: bigint,
+  _depositAmount?: bigint,
   metadata?: {
     image?: string
     description?: string
@@ -230,18 +255,44 @@ export async function ensureIdentityAtom(
   const multi = getMultiVaultAddressFromChainId(ctx.chainId)
   if (!multi) throw new Error('MultiVault not found')
 
-  const created = await createAtomFromString(
+  const variables = {
+    name: trimmedLabel,
+    description: metadata?.description || null,
+    image: metadata?.image || null, // base64 data URL venant du file input
+    url: metadata?.url || null,
+    email: null as string | null,
+    identifier: null as string | null,
+  }
+
+  const pinResult = await executeIntuitionQuery<{
+    pinPerson?: { uri?: string | null }
+  }>(PIN_PERSON_MUTATION, variables)
+
+  const ipfsUriRaw = pinResult.pinPerson?.uri
+
+  if (!ipfsUriRaw || typeof ipfsUriRaw !== 'string') {
+    throw new Error('Failed to pin Person metadata to IPFS.')
+  }
+
+  if (!ipfsUriRaw.startsWith('ipfs://')) {
+    throw new Error(`Unexpected IPFS URI returned: ${ipfsUriRaw}`)
+  }
+
+  const ipfsUri = ipfsUriRaw as `ipfs://${string}`
+
+  // 4) Création de l'atome à partir de l'URI IPFS
+  const created = await createAtomFromIpfsUri(
     {
       walletClient: ctx.walletClient,
       publicClient: ctx.publicClient,
       address: multi,
     } as any,
-    trimmedLabel,
-    depositAmount,
+    ipfsUri,
+    _depositAmount,
   )
 
   const termId = (created as any)?.state?.termId as `0x${string}` | undefined
-  if (!termId) throw new Error('Failed to get termId')
+  if (!termId) throw new Error('Failed to get termId from atom creation')
 
   return termId
 }
@@ -263,16 +314,12 @@ export async function ensureTrustCardTriple(
   const multi = getMultiVaultAddressFromChainId(ctx.chainId)
   if (!multi) throw new Error('MultiVault not found')
 
-  const stakeAmount =
-    depositAmount && depositAmount > 0n
-      ? depositAmount
-      : 10_000_000_000_000_000n
   const tripleCost = await getTripleCost({
     address: multi,
     publicClient: ctx.publicClient,
   } as any)
-  // Triple creation requires the base protocol fee plus the desired stake.
-  const totalAmount = stakeAmount + tripleCost
+
+  const amountForCreation = tripleCost
 
   await createTriples(
     {
@@ -281,23 +328,56 @@ export async function ensureTrustCardTriple(
       address: multi,
     } as any,
     {
-      args: [[subjectTermId], [PREDICATE_ID], [OBJECT_ID], [totalAmount]],
-      value: totalAmount,
+      args: [[subjectTermId], [PREDICATE_ID], [OBJECT_ID], [amountForCreation]],
+      value: amountForCreation,
     } as any,
   )
 
-  let refreshed: TrustCardTriple | null = null
+  let triple: TrustCardTriple | null = null
   for (let i = 0; i < 5; i++) {
-    refreshed = await findTrustCardTriple(subjectTermId)
-    if (refreshed) break
+    triple = await findTrustCardTriple(subjectTermId)
+    if (triple) break
     await sleep(1200)
   }
 
-  if (!refreshed) {
+  if (!triple) {
     throw new Error('Triple creation failed')
   }
 
-  return refreshed
+  const stakeAmount =
+    depositAmount && depositAmount > 0n
+      ? depositAmount
+      : 10_000_000_000_000_000n
+
+  if (stakeAmount > 0n) {
+    await deposit(
+      {
+        walletClient: ctx.walletClient,
+        publicClient: ctx.publicClient,
+        address: multi,
+      } as any,
+      {
+        args: [
+          ctx.walletClient.account.address,
+          triple.term_id as `0x${string}`,
+          BigInt(2),
+          0n,
+        ],
+        value: stakeAmount,
+      } as any,
+    )
+
+    let withStake: TrustCardTriple | null = null
+    for (let i = 0; i < 5; i++) {
+      withStake = await findTrustCardTriple(subjectTermId)
+      if (withStake?.supportVault) break
+      await sleep(1200)
+    }
+
+    return withStake ?? triple
+  }
+
+  return triple
 }
 
 export async function buyShares(
