@@ -149,6 +149,18 @@ export const FIND_TRUSTCARD_TRIPLE_FOR_SUBJECT_QUERY = `
   }
 `
 
+export const COUNT_UNIQUE_VOTERS_FOR_VAULTS_QUERY = `
+  query CountUniqueVotersForVaults($vaultIds: [String!]!) {
+    positions_aggregate(
+      where: { vault: { term_id: { _in: $vaultIds } } }
+    ) {
+      aggregate {
+        count(distinct: true, columns: [account_id])
+      }
+    }
+  }
+`
+
 // 🔹 Nouvelle mutation: pinPerson, alignée sur le schéma Mutation_Root.pinPerson(person: PinPersonInput)
 export const PIN_PERSON_MUTATION = `
   mutation PinPerson(

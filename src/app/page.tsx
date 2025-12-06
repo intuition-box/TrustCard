@@ -24,6 +24,7 @@ import {
   ensureIdentityAtom,
   ensureTrustCardTriple,
   buyShares,
+  countUniqueVotersForVaults,
 } from '@/lib/intuition/actions'
 import {
   calcStake,
@@ -49,6 +50,8 @@ export default function TrustCardVotePage() {
 
   const [triples, setTriples] = useState<TrustCardTriple[]>([])
   const [isLoadingList, setIsLoadingList] = useState(false)
+  const [uniqueVoterCount, setUniqueVoterCount] = useState<number | null>(null)
+  const [isStatsLoading, setIsStatsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   type Toast = { id: number; type: 'success' | 'error'; message: string }
@@ -98,12 +101,26 @@ export default function TrustCardVotePage() {
   async function reloadTriples() {
     try {
       setIsLoadingList(true)
+      setIsStatsLoading(true)
       const data = await fetchTrustCardTriples()
       setTriples(data)
+
+      const vaultIds = data
+        .flatMap((t) => [t.supportVault?.term_id, t.opposeVault?.term_id])
+        .filter((id): id is `0x${string}` => Boolean(id))
+      const uniqueVaultIds = [...new Set(vaultIds)]
+
+      const voters = uniqueVaultIds.length
+        ? await countUniqueVotersForVaults(uniqueVaultIds)
+        : 0
+
+      setUniqueVoterCount(voters)
     } catch (err) {
       console.error(err)
       setError('Error while loading the list.')
+      setUniqueVoterCount(null)
     } finally {
+      setIsStatsLoading(false)
       setIsLoadingList(false)
     }
   }
@@ -666,6 +683,25 @@ export default function TrustCardVotePage() {
               >
                 Trust Card Docs
               </a>
+            </div>
+
+            <div className={styles.heroStats}>
+              <div className={styles.statCard}>
+                <span className={styles.statLabel}>Total Contenders</span>
+                <span className={styles.statValue}>
+                  {isLoadingList ? '…' : triples.length.toLocaleString()}
+                </span>
+              </div>
+              <div className={styles.statCard}>
+                <span className={styles.statLabel}>Voters</span>
+                <span className={styles.statValue}>
+                  {isStatsLoading
+                    ? '…'
+                    : uniqueVoterCount !== null
+                      ? uniqueVoterCount.toLocaleString()
+                      : 'N/A'}
+                </span>
+              </div>
             </div>
 
             {error && <p className={styles.error}>{error}</p>}

@@ -1,6 +1,14 @@
-import { createConfig, http } from 'wagmi'
+import { http } from 'wagmi'
 import { defineChain } from 'viem'
-import { injected } from 'wagmi/connectors'
+import { getDefaultConfig } from '@rainbow-me/rainbowkit'
+import {
+  baseAccount,
+  metaMaskWallet,
+  rabbyWallet,
+  rainbowWallet,
+  safeWallet,
+  walletConnectWallet,
+} from '@rainbow-me/rainbowkit/wallets'
 
 export const intuitionMainnet = defineChain({
   id: 1155,
@@ -23,9 +31,27 @@ export const intuitionMainnet = defineChain({
   },
 })
 
-export const wagmiConfig = createConfig({
+const walletConnectProjectId =
+  process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ??
+  '00000000000000000000000000000000'
+
+export const wagmiConfig = getDefaultConfig({
+  appName: 'Trust Card Vote',
+  projectId: walletConnectProjectId,
   chains: [intuitionMainnet],
-  connectors: [injected()],
+  wallets: [
+    {
+      groupName: 'Popular',
+      wallets: [
+        metaMaskWallet,
+        rabbyWallet,
+        rainbowWallet,
+        walletConnectWallet,
+        safeWallet,
+        baseAccount,
+      ],
+    },
+  ],
   transports: {
     [intuitionMainnet.id]: http('https://rpc.intuition.systems/http'),
   },

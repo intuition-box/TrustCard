@@ -13,6 +13,7 @@ import {
   GET_ATOM_MARKETCAPS_QUERY,
   GET_TRUSTCARD_TRIPLES_QUERY,
   FIND_TRUSTCARD_TRIPLE_FOR_SUBJECT_QUERY,
+  COUNT_UNIQUE_VOTERS_FOR_VAULTS_QUERY,
   PIN_PERSON_MUTATION,
 } from './queries'
 import { executeIntuitionQuery } from './graphqlClient'
@@ -216,6 +217,18 @@ export async function fetchTrustCardTriples(): Promise<TrustCardTriple[]> {
   )
 
   return (data.triples ?? []).map(mapTriple)
+}
+
+export async function countUniqueVotersForVaults(
+  vaultIds: `0x${string}`[],
+): Promise<number> {
+  if (!vaultIds.length) return 0
+
+  const data = await executeIntuitionQuery<{
+    positions_aggregate?: { aggregate?: { count?: number } }
+  }>(COUNT_UNIQUE_VOTERS_FOR_VAULTS_QUERY, { vaultIds })
+
+  return data.positions_aggregate?.aggregate?.count ?? 0
 }
 
 export async function findTrustCardTriple(
