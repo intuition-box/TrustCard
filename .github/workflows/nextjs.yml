@@ -31,18 +31,15 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:
-          # Laisse GitHub gérer basePath / images pour Next + GitHub Pages
           static_site_generator: next
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build & Export (Webpack)
+      - name: Build with Next.js (webpack, output: export)
         env:
           NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID }}
-        run: |
-          npx next build --webpack
-          npx next export
+        run: npx next build --webpack
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
